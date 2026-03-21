@@ -3,7 +3,6 @@
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -30,9 +29,11 @@ export default function AppPagination({
     onPageChange?.(page);
   };
 
+  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+
   return (
     <Pagination className="justify-end">
-      <PaginationContent className="gap-2">
+      <PaginationContent className="gap-2 flex-wrap">
         <PaginationItem>
           <PaginationPrevious
             href="#"
@@ -50,45 +51,26 @@ export default function AppPagination({
           />
         </PaginationItem>
 
-        <PaginationItem>
-          <PaginationLink
-            href="#"
-            isActive={currentPage === 1}
-            onClick={(e) => {
-              e.preventDefault();
-              handlePageChange(1);
-            }}
-            className={cn(
-              "h-8 min-w-8 rounded-[4px] border px-2 text-xs font-medium",
-              currentPage === 1
-                ? "border-[#FBBF24] bg-[#FBBF24] text-[#111827] hover:bg-[#F5B718]"
-                : "border-[#D1D5DB] bg-white text-[#4B5563] hover:bg-[#F8F8F8]"
-            )}
-          >
-            1
-          </PaginationLink>
-        </PaginationItem>
-
-        {totalPages > 2 && (
-          <PaginationItem>
-            <PaginationEllipsis className="h-8 min-w-8 rounded-[4px] border border-[#D1D5DB] bg-white text-[#6B7280]" />
-          </PaginationItem>
-        )}
-
-        {totalPages > 1 && (
-          <PaginationItem>
+        {pages.map((page) => (
+          <PaginationItem key={page}>
             <PaginationLink
               href="#"
+              isActive={currentPage === page}
               onClick={(e) => {
                 e.preventDefault();
-                handlePageChange(totalPages);
+                handlePageChange(page);
               }}
-              className="h-8 min-w-8 rounded-[4px] border border-[#D1D5DB] bg-white px-2 text-xs font-medium text-[#4B5563] hover:bg-[#F8F8F8]"
+              className={cn(
+                "h-8 min-w-8 rounded-[4px] border px-2 text-xs font-medium",
+                currentPage === page
+                  ? "border-[#FBBF24] bg-[#FBBF24] text-[#111827] hover:bg-[#F5B718]"
+                  : "border-[#D1D5DB] bg-white text-[#4B5563] hover:bg-[#F8F8F8]"
+              )}
             >
-              {totalPages}
+              {page}
             </PaginationLink>
           </PaginationItem>
-        )}
+        ))}
 
         <PaginationItem>
           <PaginationNext

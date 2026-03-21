@@ -1,14 +1,17 @@
+
 import { EarningsChart } from "@/components/home/EarningsChart";
 import { InspectorRequestTable } from "@/components/home/InspectorRequestTable";
 import { PendingApprovals } from "@/components/home/PendingApprovals";
 import { StatCard } from "@/components/home/StatCard";
 
-export const metadata = {
-  title: 'Inspector Dashboard',
-  description: 'Dashboard for managing inspector requests and approvals',
-};
+// export const metadata = {
+//   title: 'Inspector Dashboard',
+//   description: 'Dashboard for managing inspector requests and approvals',
+// };
 
 export default function Dashboard() {
+ 
+
   return (
     <main className="min-h-screen bg-gray-50">
     

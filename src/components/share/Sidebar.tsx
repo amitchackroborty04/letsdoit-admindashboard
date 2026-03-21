@@ -16,6 +16,7 @@ import {
   Menu,
   X
 } from "lucide-react";
+import LogoutModal from "./LogoutModal";
 
 const navigation = [
   { name: "Dashboard Overview", href: "/", icon: LayoutDashboard },
@@ -118,12 +119,7 @@ export function Sidebar() {
         </nav>
 
         <div className="p-4 sm:p-5 border-t border-[#E7E7E7]">
-          <div
-            className="flex items-center gap-3 rounded-md px-3 py-2 text-base font-medium text-[#C43D3D] transition-all duration-200 hover:bg-red-50 cursor-pointer"
-            onClick={() => { }} // Handle logout trigger
-          >
-            {/* <LogoutModal /> */}
-          </div>
+          <LogoutModal />
         </div>
       </div>
     </>

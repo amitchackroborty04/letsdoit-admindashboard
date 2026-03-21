@@ -1,3 +1,4 @@
+
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
@@ -5,7 +6,9 @@ import AuthProvider from "@/components/providers/AuthProvider";
 import QueryProvider from "@/components/providers/QueryProvider";
 import { Toaster } from "sonner";
 
-// ✅ Load Poppins
+import NextTopLoader from 'nextjs-toploader'
+
+
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -25,10 +28,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${poppins.variable} font-sans antialiased`}>
+        <NextTopLoader color="#FBBF24" height={3} showSpinner={false} />
         <AuthProvider>
           <QueryProvider>
             {children}
-            <Toaster position="top-center" richColors />
+            <Toaster position="top-right" richColors />
           </QueryProvider>
         </AuthProvider>
       </body>
