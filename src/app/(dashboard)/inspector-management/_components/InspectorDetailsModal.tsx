@@ -6,17 +6,12 @@ import {
   DialogClose,
   DialogContent,
 } from "@/components/ui/dialog";
+import type { Inspector } from "../_types";
 
-type DealershipItem = {
-  name: string;
-  email: string;
-  date: string;
-};
-
-type DealershipDetailsModalProps = {
+type InspectorDetailsModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  dealership?: DealershipItem | null;
+  inspector?: Inspector | null;
 };
 
 function InfoBlock({
@@ -52,10 +47,39 @@ function ParagraphBlock({
 export default function InspectorDetailsModal({
   open,
   onOpenChange,
-  dealership,
-}: DealershipDetailsModalProps) {
-  const name = dealership?.name ?? "Johnson";
-  const email = dealership?.email ?? "example@gmail.com";
+  inspector,
+}: InspectorDetailsModalProps) {
+  const profile = inspector?.inspectorProfile;
+  const address = inspector?.address;
+
+  const firstName = inspector?.firstName || "—";
+  const lastName = inspector?.lastName || "—";
+  const email = inspector?.email || "—";
+  const phone = inspector?.phone || "—";
+
+  const street = address?.StreetAddress || "—";
+  const city = address?.city || "—";
+  const state = address?.state || "—";
+  const postalCode = address?.postalCode || "—";
+
+  const yearsOfExperience = profile?.yearsOfExperience || "—";
+  const aseCertificationNumber = profile?.aseCertificationNumber || "—";
+  const certificationsAndTraining = profile?.certificationsAndTraining || "—";
+  const currentEmployer = profile?.currentEmployer || "—";
+  const contractorStatus = profile?.contractorStatus || "—";
+  const availableHoursPerWeek = profile?.availableHoursPerWeek || "—";
+  const preferredServiceAreas = profile?.preferredServiceAreas?.length
+    ? profile.preferredServiceAreas.join(", ")
+    : "—";
+  const yesNo = (value?: boolean | null) =>
+    value === true ? "Yes" : value === false ? "No" : "—";
+  const hasReliableTransportation = yesNo(profile?.hasReliableTransportation);
+  const availableOnWeekends = yesNo(profile?.availableOnWeekends);
+  const criminalBackground = profile?.criminalBackground || "—";
+  const drivingRecord = profile?.drivingRecord || "—";
+  const professionalReferences = profile?.professionalReferences || "—";
+  const motivation = profile?.motivation || "—";
+  const additionalSkills = profile?.additionalSkills || "—";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -71,23 +95,23 @@ export default function InspectorDetailsModal({
             </h3>
 
             <div className="grid grid-cols-2 gap-6 border-b border-[#e5e5e5] pb-4">
-              <InfoBlock label="First Name:" value={name.split(" ")[0] ?? name} />
-              <InfoBlock label="Last Name:" value={name.split(" ")[1] ?? "Morris"} />
+              <InfoBlock label="First Name:" value={firstName} />
+              <InfoBlock label="Last Name:" value={lastName} />
             </div>
 
             <div className="grid grid-cols-2 gap-6 border-b border-[#e5e5e5] pb-4">
               <InfoBlock label="Email:" value={email} />
-              <InfoBlock label="Phone Number:" value="+2196412365" />
+              <InfoBlock label="Phone Number:" value={phone} />
             </div>
 
             <div className="grid grid-cols-2 gap-6 border-b border-[#e5e5e5] pb-4">
-              <InfoBlock label="Street Address:" value="USA,road 12" />
-              <InfoBlock label="City:" value="Miami" />
+              <InfoBlock label="Street Address:" value={street} />
+              <InfoBlock label="City:" value={city} />
             </div>
 
             <div className="grid grid-cols-2 gap-6">
-              <InfoBlock label="State:" value="Minnesota" />
-              <InfoBlock label="ZIP Code:" value="154454" />
+              <InfoBlock label="State:" value={state} />
+              <InfoBlock label="ZIP Code:" value={postalCode} />
             </div>
           </div>
 
@@ -97,18 +121,27 @@ export default function InspectorDetailsModal({
             </h3>
 
             <div className="grid grid-cols-2 gap-6 border-b border-[#e5e5e5] pb-4">
-              <InfoBlock label="Years of Automotive Experience:" value="1-2 years" />
-              <InfoBlock label="ASE Certification Number:" value="********" />
+              <InfoBlock
+                label="Years of Automotive Experience:"
+                value={yearsOfExperience}
+              />
+              <InfoBlock
+                label="ASE Certification Number:"
+                value={aseCertificationNumber}
+              />
             </div>
 
             <ParagraphBlock
               label="Certifications & Training:"
-              value="Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry’s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it."
+              value={certificationsAndTraining}
             />
 
             <div className="grid grid-cols-2 gap-6 border-b border-[#e5e5e5] pb-4">
-              <InfoBlock label="Current/Most Recent Employer:" value="Lorem Ipsum" />
-              <InfoBlock label="Contractor Status:" value="Part-time (10-20 hours)" />
+              <InfoBlock
+                label="Current/Most Recent Employer:"
+                value={currentEmployer}
+              />
+              <InfoBlock label="Contractor Status:" value={contractorStatus} />
             </div>
           </div>
         </div>
@@ -120,18 +153,21 @@ export default function InspectorDetailsModal({
             </h3>
 
             <div className="grid grid-cols-2 gap-6 border-b border-[#e5e5e5] pb-4">
-              <InfoBlock label="Available Hours per Week:" value="12 hours" />
-              <InfoBlock label="ASE Certification Number:" value="********" />
+              <InfoBlock
+                label="Available Hours per Week:"
+                value={availableHoursPerWeek}
+              />
+              <InfoBlock label="Contractor Status:" value={contractorStatus} />
             </div>
 
             <ParagraphBlock
               label="Preferred Service Areas:"
-              value="Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry’s standard dummy text ever since the 1500s."
+              value={preferredServiceAreas}
             />
 
             <div className="grid grid-cols-2 gap-6 text-[12px] text-[#3b3b3b]">
-              <p>I have reliable transportation</p>
-              <p>Available for weekend inspections</p>
+              <p>Reliable transportation: {hasReliableTransportation}</p>
+              <p>Available on weekends: {availableOnWeekends}</p>
             </div>
           </div>
 
@@ -141,13 +177,13 @@ export default function InspectorDetailsModal({
             </h3>
 
             <div className="grid grid-cols-2 gap-6 border-b border-[#e5e5e5] pb-4">
-              <InfoBlock label="Criminal Background:" value="No criminal background" />
-              <InfoBlock label="Driving Record:" value="Clean driving record" />
+              <InfoBlock label="Criminal Background:" value={criminalBackground} />
+              <InfoBlock label="Driving Record:" value={drivingRecord} />
             </div>
 
             <ParagraphBlock
               label="Professional References:"
-              value="Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry’s standard dummy text ever since the 1500s."
+              value={professionalReferences}
             />
           </div>
         </div>
@@ -159,12 +195,12 @@ export default function InspectorDetailsModal({
 
           <ParagraphBlock
             label="Why are you interested in this position?"
-            value="Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry’s standard dummy text ever since the 1500s."
+            value={motivation}
           />
 
           <ParagraphBlock
             label="Additional Skills or Experience"
-            value="Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry’s standard dummy text ever since the 1500s."
+            value={additionalSkills}
           />
         </div>
 

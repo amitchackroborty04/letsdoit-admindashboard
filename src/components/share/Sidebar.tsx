@@ -96,19 +96,17 @@ export function Sidebar() {
                 className={cn(
                   "flex w-full items-center justify-start gap-3 rounded-md px-3 py-2.5 text-sm font-normal transition-all duration-200",
                   isActive
-                    ? "bg-[#F7B500] text-[#1A1A1A] shadow-[0px_3px_8px_rgba(247,181,0,0.3)]"
+                    ? "bg-[#F7B500] text-[#131313] shadow-[0px_3px_8px_rgba(247,181,0,0.3)]"
                     : "text-[#2B2B2B] hover:bg-[#FFF6D8] hover:text-[#1A1A1A]"
                 )}
               >
                 <item.icon
-                  className={cn(
-                    "h-5 w-5 transition-colors duration-200 flex-shrink-0",
-                    isActive ? "text-[#1A1A1A]" : "text-[#6B6B6B]"
-                  )}
+                  className="h-5 w-5 flex-shrink-0 text-[#131313] transition-colors duration-200"
                 />
                 <span
                   className={cn(
-                    "font-normal text-[16px] leading-[120%] text-[#616161] transition-colors duration-200"
+                    "font-normal text-[16px] leading-[120%] transition-colors duration-200",
+                    isActive ? "text-[#131313]" : "text-[#616161]"
                   )}
                 >
                   {item.name}
