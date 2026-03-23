@@ -160,7 +160,7 @@ export default function PersonalInformationPage() {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/upload-avatar`,
         {
-          method: "POST",
+          method: "PUT",
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -195,15 +195,7 @@ export default function PersonalInformationPage() {
         phoneNumber: profile.phone || "",
         gender: profile.gender || "",
         dateOfBirth: profile.dob || "",
-        address:
-          [
-            profile.address.StreetAddress,
-            profile.address.city,
-            profile.address.state,
-            profile.address.postalCode,
-          ]
-            .filter(Boolean)
-            .join(", ") || "",
+        address: profile.address?.StreetAddress || "",
       }
     : {
         fullName: "",
@@ -226,7 +218,7 @@ export default function PersonalInformationPage() {
   };
 
   const handleSave = () => {
-    if (!tempData) return;
+    if (!tempData || !profile) return;
 
     // Prepare payload for API (you can adjust field names)
     const payload: Partial<UserProfile> = {
@@ -235,8 +227,10 @@ export default function PersonalInformationPage() {
       phone: tempData.phoneNumber,
       gender: tempData.gender,
       dob: tempData.dateOfBirth || null,
-      // address: you may want to split it back or send full object
-      // For simplicity sending flat string – adjust if backend expects object
+      address: {
+        ...profile.address,
+        StreetAddress: tempData.address,
+      },
     };
 
     updateMutation.mutate(payload);

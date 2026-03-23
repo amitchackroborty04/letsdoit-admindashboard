@@ -4,9 +4,11 @@ import { Mail } from "lucide-react";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
+  const router = useRouter();
 
   const forgotPasswordMutation = useMutation({
     mutationFn: async (email: string) => {
@@ -25,15 +27,17 @@ export default function ForgotPasswordPage() {
         );
       }
 
-      return res.json(); // or just return true if no body needed
+      return res.json(); 
     },
 
     onSuccess: () => {
       toast.success("OTP sent successfully!", {
         description: "Please check your email",
       });
-      // Optional: clear input or redirect
-      // setEmail("");
+      const trimmedEmail = email.trim();
+      if (trimmedEmail) {
+        router.push(`/verify-otp?email=${encodeURIComponent(trimmedEmail)}`);
+      }
     },
 
     onError: (error: Error) => {
