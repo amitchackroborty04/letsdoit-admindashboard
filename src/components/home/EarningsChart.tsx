@@ -1,5 +1,8 @@
 'use client';
 
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useSession } from 'next-auth/react';
 import {
   AreaChart,
   Area,
@@ -9,27 +12,73 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-const data = [
-  { name: 'Feb', value: 32000, tooltipLabel: 'February 2021' },
-  { name: 'Mar', value: 36000, tooltipLabel: 'March 2021' },
-  { name: 'Apr', value: 33000, tooltipLabel: 'April 2021' },
-  { name: 'May', value: 41000, tooltipLabel: 'May 2021' },
-  { name: 'Jun', value: 45591, tooltipLabel: 'June 2021' },
-  { name: 'Jul', value: 43000, tooltipLabel: 'July 2021' },
-  { name: 'Aug', value: 47000, tooltipLabel: 'August 2021' },
-  { name: 'Sep', value: 44000, tooltipLabel: 'September 2021' },
-  { name: 'Oct', value: 56000, tooltipLabel: 'October 2021' },
-  { name: 'Nov', value: 54000, tooltipLabel: 'November 2021' },
-  { name: 'Dec', value: 59000, tooltipLabel: 'December 2021' },
-  { name: 'Jan', value: 62000, tooltipLabel: 'January 2022' },
-];
+type GrowthPoint = {
+  year: number;
+  month: number;
+  revenue: number;
+};
+
+type GrowthResponse = {
+  status: boolean;
+  message: string;
+  data: GrowthPoint[];
+};
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
   maximumFractionDigits: 0,
 });
+
+const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthFullLabels = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+const DEFAULT_YEAR = 2026;
+
+async function fetchGrowth(year: number, token?: string | null): Promise<GrowthPoint[]> {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin-dashboard/growth?period=monthly&year=${year}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch revenue growth');
+  }
+
+  const json: GrowthResponse = await res.json();
+  if (!json.status || !Array.isArray(json.data)) {
+    throw new Error(json.message || 'Invalid growth response');
+  }
+
+  return json.data;
+}
 
 function EarningsTooltip({
   active,
@@ -54,6 +103,42 @@ function EarningsTooltip({
 }
 
 export function EarningsChart() {
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState<number>(DEFAULT_YEAR);
+  const years = useMemo(() => {
+    const baseYears = Array.from({ length: 5 }, (_, i) => currentYear - 4 + i);
+    if (!baseYears.includes(DEFAULT_YEAR)) {
+      baseYears.push(DEFAULT_YEAR);
+    }
+    return baseYears.sort((a, b) => a - b);
+  }, [currentYear]);
+
+  const { data: session, status } = useSession();
+  const token = session?.accessToken;
+
+  const { data: growthData = [], isLoading, error } = useQuery<GrowthPoint[], Error>({
+    queryKey: ['admin-dashboard-growth', selectedYear, token],
+    queryFn: () => fetchGrowth(selectedYear, token),
+    enabled: status !== 'loading' && !!token,
+    refetchOnWindowFocus: true,
+  });
+
+  const chartData = useMemo(() => {
+    const revenueByMonth = new Map<number, number>();
+    growthData.forEach((point) => {
+      revenueByMonth.set(point.month, point.revenue);
+    });
+
+    return monthLabels.map((label, index) => {
+      const monthIndex = index + 1;
+      return {
+        name: label,
+        value: revenueByMonth.get(monthIndex) ?? 0,
+        tooltipLabel: `${monthFullLabels[index]} ${selectedYear}`,
+      };
+    });
+  }, [growthData, selectedYear]);
+
   return (
     <div className="flex h-[514px] flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
       <div className="mb-6 flex items-center justify-between">
@@ -63,14 +148,30 @@ export function EarningsChart() {
             Track total revenue, platform commission, and payouts over time.
           </p>
         </div>
-        <button className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
-          Monthly
-          <span className="text-[10px]">▼</span>
-        </button>
+        <Select
+          value={String(selectedYear)}
+          onValueChange={(value) => setSelectedYear(Number(value))}
+        >
+          <SelectTrigger className="h-8 w-[110px] rounded-md border border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 shadow-none">
+            <SelectValue placeholder="Year" />
+          </SelectTrigger>
+          <SelectContent>
+            {years.map((year) => (
+              <SelectItem key={year} value={String(year)}>
+                {year}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-      <div className="flex-1">
+      {error ? (
+        <div className="flex flex-1 items-center justify-center text-sm text-red-600">
+          {error.message}
+        </div>
+      ) : (
+      <div className="relative flex-1">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 10, right: 16, left: 8, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 10, right: 16, left: 8, bottom: 0 }}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#2563eb" stopOpacity={0.18} />
@@ -99,7 +200,13 @@ export function EarningsChart() {
             />
           </AreaChart>
         </ResponsiveContainer>
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-500">
+            Loading revenue growth...
+          </div>
+        )}
       </div>
+      )}
     </div>
   );
 }

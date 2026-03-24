@@ -1,5 +1,6 @@
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { MoreVertical } from 'lucide-react';
+import Link from 'next/link';
 
 interface ApprovalItem {
   id: string;
@@ -44,7 +45,9 @@ export function PendingApprovals() {
           <h3 className="text-lg font-semibold text-gray-900">Pending Inspector Approvals</h3>
           <p className="text-sm text-gray-500">Approve pending professional profiles.</p>
         </div>
+        <Link href="/inspector-management">
         <button className="text-sm text-green-600 hover:text-green-700 font-semibold">See all</button>
+        </Link>
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto pr-1">
