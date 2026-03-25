@@ -2,7 +2,6 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { EarningsChart } from "@/components/home/EarningsChart";
-import { InspectorRequestTable } from "@/components/home/InspectorRequestTable";
 import { PendingApprovals } from "@/components/home/PendingApprovals";
 import { StatCard } from "@/components/home/StatCard";
 import { useSession } from 'next-auth/react';
@@ -56,7 +55,7 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <main className="min-h-screen bg-gray-50 p-6">
+      <main className="min-h-screen  p-6">
         <div className="text-red-600">Error loading dashboard stats: {error.message}</div>
       </main>
     );
@@ -115,12 +114,12 @@ export default function Dashboard() {
         </div>
 
         {/* Bottom Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <InspectorRequestTable />
           <div>
             <PendingApprovals />
           </div>
-        </div>
+        </div> */}
       </div>
     </main>
   );
