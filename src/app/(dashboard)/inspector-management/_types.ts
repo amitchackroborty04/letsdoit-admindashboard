@@ -33,6 +33,7 @@ export type Inspector = {
   profileImage?: string | null;
   address?: InspectorAddress | null;
   inspectorProfile: InspectorProfile;
+  createdAt?: string | null;
 };
 
 export type InspectorApiResponse = {
