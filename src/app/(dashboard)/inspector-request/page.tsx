@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { Eye } from "lucide-react";
 import {
   Table,
@@ -24,17 +23,84 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import InspectionReportModal from "./_components/InspectionReportModal";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Customer {
   _id: string;
-  firstName: string;
-  lastName: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  profileImage?: string | null;
+}
+
+interface InspectorAddress {
+  StreetAddress?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postalCode?: string | null;
+  taxId?: string | null;
+}
+
+interface InspectorProfile {
+  yearsOfExperience?: string | null;
+  aseCertificationNumber?: string | null;
+  certificationsAndTraining?: string | null;
+  currentEmployer?: string | null;
+  contractorStatus?: string | null;
+  availableHoursPerWeek?: string | null;
+  preferredServiceAreas?: string[];
+  hasReliableTransportation?: boolean | null;
+  availableOnWeekends?: boolean | null;
+  criminalBackground?: string | null;
+  drivingRecord?: string | null;
+  professionalReferences?: string | null;
+  motivation?: string | null;
+  additionalSkills?: string | null;
+  isApproved?: boolean | null;
+}
+
+interface InspectorSubscription {
+  planId?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+}
+
+interface InspectorSearchUsage {
+  used?: number | null;
+  resetDate?: string | null;
 }
 
 interface Inspector {
   _id: string;
-  firstName: string;
-  lastName: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  dob?: string | null;
+  gender?: string | null;
+  role?: string | null;
+  stripeAccountId?: string | null;
+  bio?: string | null;
+  address?: InspectorAddress | null;
+  inspectorProfile?: InspectorProfile | null;
+  profileImage?: string | null;
+  multiProfileImage?: string[] | null;
+  pdfFile?: string | null;
+  otp?: string | null;
+  otpExpires?: string | null;
+  otpVerified?: boolean | null;
+  resetExpires?: string | null;
+  isVerified?: boolean | null;
+  refreshToken?: string | null;
+  hasActiveSubscription?: boolean | null;
+  subscriptionExpireDate?: string | null;
+  blockedUsers?: string[] | null;
+  language?: string | null;
+  createdAt?: string | null;
+  subscription?: InspectorSubscription | null;
+  searchUsage?: InspectorSearchUsage | null;
 }
 
 interface Booking {
@@ -48,7 +114,11 @@ interface Booking {
   vin: string;
   vehicleLocation: string;
   message: string;
-  status: string;
+  status?: string;
+  jobStatus?: string;
+  assignmentStatus?: string;
+  numberPlate?: string;
+  checklist?: { _id?: string | null } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -62,8 +132,15 @@ interface ApiResponse {
 interface InspectorsApiResponse {
   status: boolean;
   message: string;
-  data: {
-    inspectors: Inspector[];
+  data?: {
+    inspectors?: Inspector[];
+    paginationInfo?: {
+      currentPage?: number;
+      totalPages?: number;
+      totalData?: number;
+      hasNextPage?: boolean;
+      hasPrevPage?: boolean;
+    };
   };
 }
 
@@ -77,6 +154,10 @@ export default function InspectorJobsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [reportChecklistId, setReportChecklistId] = useState<string | null>(
+    null
+  );
   const itemsPerPage = 10; 
   const session = useSession();
   const token=session?.data?.accessToken
@@ -84,21 +165,34 @@ export default function InspectorJobsPage() {
 
 
   const fetchBookings = async (): Promise<Booking[]> => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/booking-inspect`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-    },
-  });
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/booking-inspect`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      }
+    );
 
-  if (!res.ok) {
-    throw new Error("Failed to fetch bookings");
-  }
+    if (!res.ok) {
+      throw new Error("Failed to fetch bookings");
+    }
 
-  const json: ApiResponse = await res.json();
-  return json.data;
-};
+    const json: ApiResponse | { data?: { bookings?: Booking[] } } =
+      await res.json();
+
+    if (Array.isArray(json?.data)) {
+      return json.data;
+    }
+
+    if (Array.isArray(json?.data?.bookings)) {
+      return json.data.bookings;
+    }
+
+    return [];
+  };
 
   const fetchInspectors = async (): Promise<Inspector[]> => {
     const res = await fetch(
@@ -117,13 +211,19 @@ export default function InspectorJobsPage() {
     }
 
     const json: InspectorsApiResponse = await res.json();
-    return json.data.inspectors || [];
+
+    if (json?.status === false) {
+      throw new Error(json?.message || "Failed to fetch inspectors");
+    }
+
+    return Array.isArray(json?.data?.inspectors) ? json.data.inspectors : [];
   };
 
-  const { data, isLoading, error } = useQuery<Booking[]>({
-    queryKey: ["bookings"],
+  const { data: bookings = [], isLoading, error } = useQuery<Booking[]>({
+    queryKey: ["bookings", token],
     queryFn: fetchBookings,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: !!token,
   });
 
   const {
@@ -136,6 +236,9 @@ export default function InspectorJobsPage() {
     staleTime: 1000 * 60 * 5,
     enabled: !!token,
   });
+
+  console.log(inspectors)
+
 
   const { mutate: assignInspector, isPending: isAssigning } = useMutation({
     mutationFn: async ({ bookingId, inspectorId }: AssignInspectorPayload) => {
@@ -180,11 +283,13 @@ export default function InspectorJobsPage() {
   });
 
   // Client-side pagination (you can move to server-side later if needed)
-  const paginatedData = data
-    ? data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-    : [];
+  const paginatedData = bookings.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  console.log(paginatedData)
 
-  const totalPages = data ? Math.ceil(data.length / itemsPerPage) : 0;
+  const totalPages = Math.ceil(bookings.length / itemsPerPage);
 
   // Helper to build full name
   const getFullName = (customer: Customer) => {
@@ -193,16 +298,43 @@ export default function InspectorJobsPage() {
     return first || last ? `${first} ${last}`.trim() : "Unknown User";
   };
 
+  const getCustomerDisplayName = (customer: Customer) => {
+    const fullName = getFullName(customer);
+    if (fullName !== "Unknown User") return fullName;
+    if (customer.email) return customer.email.split("@")[0] || customer.email;
+    if (customer.phone) return customer.phone;
+    return "Unknown User";
+  };
+
+  const getInitials = (name: string) => {
+    const letters = name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .filter(Boolean)
+      .join("");
+    return letters || "U";
+  };
+
   const getInspectorName = (inspector: Inspector) => {
     const first = inspector.firstName?.trim() || "";
     const last = inspector.lastName?.trim() || "";
-    return first || last ? `${first} ${last}`.trim() : "Unnamed Inspector";
+    if (first || last) return `${first} ${last}`.trim();
+    if (inspector.email) return inspector.email;
+    if (inspector.phone) return inspector.phone;
+    return "Unnamed Inspector";
   };
 
   const formatDateTime = (value?: string) => {
     if (!value) return "N/A";
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? "N/A" : date.toLocaleString("en-US");
+  };
+
+  const truncateText = (value: string, max: number) => {
+    if (value.length <= max) return value;
+    return `${value.slice(0, max)}...`;
   };
 
   const handleAssignInspector = (bookingId: string, inspectorId: string) => {
@@ -213,6 +345,11 @@ export default function InspectorJobsPage() {
   const handleViewDetails = (booking: Booking) => {
     setSelectedBooking(booking);
     setIsDetailsOpen(true);
+  };
+
+  const handleOpenReport = (checklistId: string) => {
+    setReportChecklistId(checklistId);
+    setIsReportOpen(true);
   };
 
   // Vehicle display
@@ -321,9 +458,12 @@ export default function InspectorJobsPage() {
                 ))
               ) : (
                 paginatedData.map((booking) => {
-                  const fullName = getFullName(booking.customer);
+                  const displayName = getCustomerDisplayName(booking.customer);
+                  const initials = getInitials(displayName);
                   const vehicle = getVehicle(booking);
-                  const reportDisabled = booking.status !== "assigned"; // Example logic – adjust as needed
+                  const vehicleLabel = truncateText(vehicle, 10);
+                  const checklistId = booking.checklist?._id ?? "";
+                  const reportDisabled = !checklistId;
 
                   return (
                     <TableRow
@@ -332,17 +472,17 @@ export default function InspectorJobsPage() {
                     >
                       <TableCell className="px-3 py-4">
                         <div className="flex min-w-[150px] items-center gap-2">
-                          <div className="relative h-8 w-8 overflow-hidden rounded-full">
-                            <Image
-                              src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200&auto=format&fit=crop"
-                              alt={fullName}
-                              fill
-                              className="object-cover"
-                              unoptimized
+                          <Avatar className="h-8 w-8 border border-[#e3e3e3]">
+                            <AvatarImage
+                              src={booking.customer.profileImage || ""}
+                              alt={displayName}
                             />
-                          </div>
+                            <AvatarFallback className="text-[11px] font-semibold text-[#1f1f1f]">
+                              {initials}
+                            </AvatarFallback>
+                          </Avatar>
                           <span className="text-[16px] font-normal text-[#333333]">
-                            {fullName}
+                            {displayName}
                           </span>
                         </div>
                       </TableCell>
@@ -352,7 +492,9 @@ export default function InspectorJobsPage() {
                       </TableCell>
 
                       <TableCell className="px-3 py-4 text-[16px] text-[#333333]">
-                        <span className="whitespace-nowrap">{vehicle}</span>
+                        <span className="whitespace-nowrap" title={vehicle}>
+                          {vehicleLabel}
+                        </span>
                       </TableCell>
 
                       <TableCell className="px-3 py-4 text-[14px] leading-[15px] text-[#5f5f5f]">
@@ -423,6 +565,7 @@ export default function InspectorJobsPage() {
                               ? "cursor-not-allowed bg-[#d9d9d9] text-[#8e8e8e]"
                               : "bg-[#FBBF24] text-[#131313]"
                           }`}
+                          onClick={() => handleOpenReport(checklistId)}
                         >
                           See Report
                         </button>
@@ -438,8 +581,8 @@ export default function InspectorJobsPage() {
           <div className="flex flex-col gap-4 px-6 py-4 md:flex-row md:items-center md:justify-between">
             <p className="text-[16px] text-[#7d7d7d] text-nowrap">
               Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-              {Math.min(currentPage * itemsPerPage, data?.length || 0)} of{" "}
-              {data?.length || 0} results
+              {Math.min(currentPage * itemsPerPage, bookings.length)} of{" "}
+              {bookings.length} results
             </p>
 
             <AppPagination
@@ -558,6 +701,16 @@ export default function InspectorJobsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <InspectionReportModal
+        open={isReportOpen}
+        onOpenChange={(open) => {
+          setIsReportOpen(open);
+          if (!open) setReportChecklistId(null);
+        }}
+        checklistId={reportChecklistId}
+        token={token}
+      />
     </div>
   );
 }
